@@ -15,13 +15,10 @@ def call_model(client, messages):
 
     return response
 
-# function to check for response metadata, then print token info and return text. otherwise raise error
+# function to check for response metadata and return text or raise error if none
 def check_metadata(response):
     
     if response.usage_metadata != None:
-        
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
         
         return response.text
     
@@ -42,12 +39,33 @@ def get_api_key():
 
     return api_key
 
+# func to parse args via cli
+def parse_args():
+    
+    # ArgumentParser object
+    prompt_parser = argparse.ArgumentParser(description="Alfred")
+    
+    # add args to parse for
+    prompt_parser.add_argument("user_prompt", type = str, help = "Prompt for Alfred")
+    prompt_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    
+    # store and return args
+    args = prompt_parser.parse_args()
+    return args
+
+# func to print verbose output if requested
+def verbose(args, response):
+    
+    if args.verbose == True:
+        print(f"User prompt: {args.user_prompt}")
+        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        
+
 def main():
 
-    # Parse prompt given via cli
-    prompt_parser = argparse.ArgumentParser(description="Alfred")
-    prompt_parser.add_argument("user_prompt", type = str, help = "Prompt for Alfred")
-    args = prompt_parser.parse_args()
+    # call func to get args:
+    args = parse_args()
 
     # call func to retrieve api key
     api_key = get_api_key()
@@ -60,9 +78,12 @@ def main():
 
     # call model and store entire response
     response = call_model(client, messages)
-    
+
     # send response to metadata check function
     response_text = check_metadata(response)
+
+    # call verbose func
+    verbose(args, response)
 
     # print response to CLI
     print(response_text)
