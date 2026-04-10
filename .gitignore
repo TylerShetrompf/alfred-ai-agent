@@ -2,3 +2,5 @@
 pyproject.toml
 .venv/
 uv.lock
+.env
+.vscode
