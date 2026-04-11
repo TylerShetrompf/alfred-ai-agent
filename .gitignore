@@ -6,4 +6,5 @@ uv.lock
 .vscode
 calculator/
 test_get_files_info.py
-functions/__pycache__
+*__pycache__
+test_get_file_content.py
