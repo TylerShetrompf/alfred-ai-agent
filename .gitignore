@@ -4,3 +4,6 @@ pyproject.toml
 uv.lock
 .env
 .vscode
+calculator/
+test_get_files_info.py
+functions/__pycache__
