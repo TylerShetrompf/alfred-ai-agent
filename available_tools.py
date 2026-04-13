@@ -8,6 +8,5 @@ from functions.write_file import write_file, schema_write_file
 
 # create tool object with functions available to agent
 available_tools = types.Tool(
-    function_declarations=[schema_get_files_info],
-
+    function_declarations=[schema_get_files_info,schema_get_file_contents,schema_run_python_file,schema_write_file]
 )

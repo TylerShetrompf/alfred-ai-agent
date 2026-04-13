@@ -16,7 +16,7 @@ def call_model(client, messages):
     
     # send prompt and return response
     response = client.models.generate_content( 
-        model = "gemini-3-flash-preview", 
+        model = "gemini-flash-latest", 
         contents = messages,
         config = types.GenerateContentConfig(tools=[available_tools], system_instruction=system_prompt)
     )

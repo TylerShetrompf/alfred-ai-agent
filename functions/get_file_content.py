@@ -33,6 +33,7 @@ schema_get_file_contents = types.FunctionDeclaration(
     description="Returns the contents of a file as text specified by file path relative to the working directory",
     parameters=types.Schema(
         type=types.Type.OBJECT,
+        required=["file_path"],
         properties={
             "file_path": types.Schema(
                 type=types.Type.STRING,

@@ -55,9 +55,10 @@ def run_python_file(working_directory, file_path, args=None):
     
 schema_run_python_file = types.FunctionDeclaration(
     name="run_python_file",
-    description="Run a python script at a specified file path relative to the working directory with specified arguments. ",
+    description="Execute (run) a python file (.py file) at a specified file path relative to the working directory with specified arguments. ",
     parameters=types.Schema(
         type=types.Type.OBJECT,
+        required=["file_path"],
         properties={
             "file_path": types.Schema(
                 type=types.Type.STRING,
@@ -65,6 +66,9 @@ schema_run_python_file = types.FunctionDeclaration(
             ),
             "args": types.Schema(
                 type=types.Type.ARRAY,
+                items=types.Schema(
+                    type=types.Type.STRING,
+                ),
                 description="Arguments to be passed with script being executed (default is None)",
             ),
         },
