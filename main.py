@@ -1,8 +1,15 @@
 import os
+
 from dotenv import load_dotenv # for reading environment variables from .env file
+
 from google import genai # for interacting with Gemini API
+from google.genai import types # for handling Gemini API request and response objects
+
 import argparse # for parsing arguments passed via cli
-from google.genai import types 
+
+from prompts import system_prompt # imports the system prompt
+
+from available_tools import available_tools
 
 # function to call api with content
 def call_model(client, messages):
@@ -10,7 +17,8 @@ def call_model(client, messages):
     # send prompt and return response
     response = client.models.generate_content( 
         model = "gemini-3-flash-preview", 
-        contents = messages
+        contents = messages,
+        config = types.GenerateContentConfig(tools=[available_tools], system_instruction=system_prompt)
     )
 
     return response
@@ -79,14 +87,18 @@ def main():
     # call model and store entire response
     response = call_model(client, messages)
 
-    # send response to metadata check function
+    # send response to metadata check function (returns response text)
     response_text = check_metadata(response)
 
     # call verbose func
     verbose(args, response)
 
-    # print response to CLI
-    print(response_text)
+    if response.function_calls != None:
+        for call in response.function_calls:
+            print(f"Calling function: {call.name}({call.args})")
+    else:
+        # print response to CLI
+        print(response_text)
 
     
 
