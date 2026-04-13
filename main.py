@@ -1,4 +1,6 @@
 import os
+import time
+import sys
 
 from dotenv import load_dotenv # for reading environment variables from .env file
 
@@ -9,19 +11,40 @@ import argparse # for parsing arguments passed via cli
 
 from prompts import system_prompt # imports the system prompt
 
-from available_tools import available_tools
+from available_tools import available_tools, call_function
 
 # function to call api with content
 def call_model(client, messages):
     
-    # send prompt and return response
-    response = client.models.generate_content( 
-        model = "gemini-flash-latest", 
-        contents = messages,
-        config = types.GenerateContentConfig(tools=[available_tools], system_instruction=system_prompt)
-    )
+    # updated to use try/except due to constant 503 errors
+    attempt = 0
+    max_retries = 30
+    delay = 5
 
-    return response
+    while attempt < max_retries:
+        
+        try:
+            # send prompt and return response
+            response = client.models.generate_content( 
+                model = "gemini-2.5-flash", 
+                contents = messages,
+                config = types.GenerateContentConfig(tools=[available_tools], system_instruction=system_prompt)
+            )
+            return response
+
+        
+        except Exception as e:
+            attempt += 1
+            print(f"Attempt {attempt} failed: {e}")
+
+            if attempt < max_retries:
+                    print(f"Retrying in {delay} seconds...")
+                    time.sleep(delay)
+            else:
+                print("All retries failed.")
+                raise  # Re-raise the last exception
+
+
 
 # function to check for response metadata and return text or raise error if none
 def check_metadata(response):
@@ -59,16 +82,7 @@ def parse_args():
     
     # store and return args
     args = prompt_parser.parse_args()
-    return args
-
-# func to print verbose output if requested
-def verbose(args, response):
-    
-    if args.verbose == True:
-        print(f"User prompt: {args.user_prompt}")
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-        
+    return args       
 
 def main():
 
@@ -84,22 +98,60 @@ def main():
     # set users prompt as message
     messages = [types.Content(role="user", parts=[types.Part(text = args.user_prompt)])]
 
-    # call model and store entire response
-    response = call_model(client, messages)
+    response_text = ""
 
-    # send response to metadata check function (returns response text)
-    response_text = check_metadata(response)
+    for _ in range(20):
 
-    # call verbose func
-    verbose(args, response)
+        # call model and store entire response
+        response = call_model(client, messages)
+        
+        # check candidates 
+        if response.candidates:
+            for candidate in response.candidates:
+                messages.append(candidate.content)
 
-    if response.function_calls != None:
-        for call in response.function_calls:
-            print(f"Calling function: {call.name}({call.args})")
-    else:
-        # print response to CLI
-        print(response_text)
+        # send response to metadata check function (returns response text)
+        response_text = check_metadata(response)
 
+        # handle verbose argument
+        if args.verbose == True:
+            print(f"User prompt: {args.user_prompt}")
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+
+        # init empty list for function results
+        function_results = []
+
+        if response.function_calls != None:
+            for call in response.function_calls:
+                function_call_result = call_function(call)
+
+                # Handle missing response
+                if not function_call_result.parts:
+                    raise Exception("Error: Call function response parts empty.")
+                elif function_call_result.parts[0].function_response == None or function_call_result.parts[0].function_response.response == None:
+                    raise Exception("Error: Function call response is empty.")
+                
+                else:
+                    # store result of function call
+                    function_results.append(function_call_result.parts[0])
+                    
+                    # handle verbose argument
+                    if args.verbose == True: 
+                        print(f"-> {function_call_result.parts[0].function_response.response}")
+            
+            # append function results to messages
+            messages.append(types.Content(role="user", parts=function_results))
+        
+        #if no function calls, check that there is response text:
+        elif response_text == None:
+            print("Error: No response received.")
+            sys.exit(1)
+        else:
+            print(response_text)
+            break
+
+                
     
 
 if __name__ == "__main__":

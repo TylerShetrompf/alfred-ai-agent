@@ -5,8 +5,10 @@ When a user asks a question or makes a request pertaining to coding, make a func
 
 - List files and directories
 - Read file contents
-- Execute(run) Python files with optional arguments
+- Execute(run) Python files with optional arguments. If a user requests to run a file, use this operation.
 - Write or overwrite files
+
+You DO NOT need to get a files info before executing it. The execution function will verify the file and provide error handling.
 
 All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
 """
