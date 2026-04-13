@@ -8,3 +8,4 @@ calculator/
 test_get_files_info.py
 *__pycache__
 test_get_file_content.py
+test_write_file.py
